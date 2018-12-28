@@ -2,36 +2,64 @@ package com.fmi.mpr.hw.chat;
 
 import java.io.*;
 import java.net.*;
+import java.util.Scanner;
 
-class UDPClient implements Runnable{
-	public static void main(String args[]){
-		
-		Thread thread = new Thread(new UDPClient());
-		thread.start();
-    }
+class UDPClient{
+	protected static Scanner readFrom;
+	protected static BufferedWriter writeTo;
 
-	@Override
-	public void run() {
-		try(MulticastSocket clientSocket = new MulticastSocket(8888)) {
-			InetAddress IPAddress = InetAddress.getByName("224.0.0.3");
-			clientSocket.joinGroup(IPAddress);
-			byte[] receiveData = new byte[1024];
-			while(true) {
-				System.out.println("Waiting for salvation... or a message");
-				DatagramPacket receivedPacket = new DatagramPacket(receiveData, receiveData.length);
-				clientSocket.receive(receivedPacket);
-				String message = new String(receivedPacket.getData(), receivedPacket.getOffset(), receivedPacket.getLength());
-				System.out.println("Received message: " + message);
+	public static void main(String args[]) throws IOException{
+
+		MulticastSocket clientSocket = new MulticastSocket(8888);
+		InetAddress IPAddress = InetAddress.getByName("224.0.0.3");
+		clientSocket.joinGroup(IPAddress);
+		readFrom = new Scanner(System.in);
+
+		Thread readThread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				 // read the message sent to this client 
+					byte[] receiveData = new byte[1024];
+					DatagramPacket receivedPacket = new DatagramPacket(receiveData, receiveData.length);
+					while(true) {
+						try {
+							clientSocket.receive(receivedPacket);
+							String message = new String(receivedPacket.getData(), receivedPacket.getOffset(), receivedPacket.getLength());
+							System.out.println("Received message: " + message);
+						}  catch (IOException e) {
+							// TODO Auto-generated catch block
+							System.out.println("Reading thread can't read");
+							e.printStackTrace();
+						}
+					}
 			}
-		} catch (SocketException e) {
-			System.out.println("Could not create a datagram socket for the client.");
-			e.printStackTrace();
-		} catch (UnknownHostException e) {
-			System.out.println("Could not find the given host.");
-			e.printStackTrace();
-		} catch (IOException e) {
-			System.out.println("Could not read from the file descriptor.");
-			e.printStackTrace();
+			
+		});
+		
+		Thread writeThread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				 // read the message sent to this client 
+                String msg;
+                while(true) {
+		            try {
+						msg = readFrom.nextLine();
+						DatagramPacket packet = new DatagramPacket(msg.getBytes(), msg.length(), IPAddress, 8888);
+						clientSocket.send(packet);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						System.out.println("Writing thread can't write");
+						e.printStackTrace();
+					} 
+                }
+			}
+			
+		});
+		
+		readThread.start();
+		writeThread.start();	
+				
 		}
-	}
 }

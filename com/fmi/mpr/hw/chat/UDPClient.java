@@ -3,21 +3,26 @@ package com.fmi.mpr.hw.chat;
 import java.io.*;
 import java.net.*;
 
-class UDPClient{
+class UDPClient implements Runnable{
 	public static void main(String args[]){
-		BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-		try(DatagramSocket clientSocket = new DatagramSocket()) {
-			InetAddress IPAddress = InetAddress.getByName("localhost");
-			byte[] sendData = new byte[1024];
+		
+		Thread thread = new Thread(new UDPClient());
+		thread.start();
+    }
+
+	@Override
+	public void run() {
+		try(MulticastSocket clientSocket = new MulticastSocket(8888)) {
+			InetAddress IPAddress = InetAddress.getByName("224.0.0.3");
+			clientSocket.joinGroup(IPAddress);
 			byte[] receiveData = new byte[1024];
-			String sentence = inFromUser.readLine();
-			sendData = sentence.getBytes();
-			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
-			clientSocket.send(sendPacket);
-			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-			clientSocket.receive(receivePacket);
-			String modifiedSentence = new String(receivePacket.getData());
-			System.out.println("FROM SERVER:" + modifiedSentence);
+			while(true) {
+				System.out.println("Waiting for salvation... or a message");
+				DatagramPacket receivedPacket = new DatagramPacket(receiveData, receiveData.length);
+				clientSocket.receive(receivedPacket);
+				String message = new String(receivedPacket.getData(), receivedPacket.getOffset(), receivedPacket.getLength());
+				System.out.println("Received message: " + message);
+			}
 		} catch (SocketException e) {
 			System.out.println("Could not create a datagram socket for the client.");
 			e.printStackTrace();
@@ -28,6 +33,5 @@ class UDPClient{
 			System.out.println("Could not read from the file descriptor.");
 			e.printStackTrace();
 		}
-		
-    }
+	}
 }

@@ -44,7 +44,14 @@ class UDPClient{
 				Message receivedMessage;
 				try {
 					receivedMessage = deserialize(receivedPacket);
-					save(receivedMessage, receivedMessage.getType());
+					if(!receivedMessage.getName().equals(username)) {
+						if(receivedMessage.getType() == Type.TEXT) {
+							String toShow = new String(receivedMessage.getContent());
+							System.out.println(receivedMessage.getName() + " writes: " + toShow);
+						}else {
+							save(receivedMessage, receivedMessage.getType());
+						}
+					}
 				} catch (ClassNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -65,6 +72,8 @@ class UDPClient{
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}	
+		}else if(message.isEndTransmission()){
+			System.out.println(message.getName() + " sends " + message.getType() + " file named " + message.getFilename() + "." + message.getFileExtension());
 		}else {
 			try(FileOutputStream writer = new FileOutputStream(fileToWrite, true)){
 			    writer.write(message.getContent());
